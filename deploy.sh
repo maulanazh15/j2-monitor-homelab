@@ -35,6 +35,7 @@ rollback() {
   log "Rollback ke backup terakhir di $HOST"
   ssh "$HOST" "bash -s" <<EOF
 set -e
+export SVDIR=\$PREFIX/var/service
 B=\$(ls -1d $R_BAK/go-monitor-deploy-* 2>/dev/null | tail -1)
 [ -n "\$B" ] || { echo "Tidak ada backup"; exit 1; }
 echo "Backup: \$B"
@@ -79,6 +80,7 @@ tar -C "$PKG/www" -czf "$PKG/www.tgz" .
 log "Backup di server -> $R_BAK/go-monitor-deploy-$TS"
 ssh "$HOST" "bash -s" <<EOF
 set -e
+export SVDIR=\$PREFIX/var/service
 B=$R_BAK/go-monitor-deploy-$TS
 mkdir -p "\$B"
 cp $R_APP/monitor "\$B/monitor"
@@ -93,6 +95,7 @@ log "Upload source & build native di HP (bisa 1-3 menit)"
 scp -q "$PKG/src.tgz" "$PKG/www.tgz" "$HOST:/data/data/com.termux/files/usr/tmp/"
 ssh "$HOST" "bash -s" <<EOF
 set -e
+export SVDIR=\$PREFIX/var/service
 SRC=$R_APP/src
 rm -rf "\$SRC" && mkdir -p "\$SRC"
 tar -xzf \$PREFIX/tmp/src.tgz -C "\$SRC"
@@ -107,6 +110,7 @@ EOF
 log "Mengganti binary & frontend, restart service"
 ssh "$HOST" "bash -s" <<EOF
 set -e
+export SVDIR=\$PREFIX/var/service
 cd $R_APP
 mv monitor.new monitor && chmod +x monitor
 rm -rf $R_WWW.prev && mv $R_WWW $R_WWW.prev && mv $R_WWW.new $R_WWW

@@ -65,7 +65,7 @@ Di mesin dev, metrik yang tampil adalah milik mesin dev itu sendiri. `SERVICES=n
 | `DB_PATH` | `~/homelab/database/homelab.db` (Termux) | File SQLite |
 | `STATIC_DIR` | – | Bila diisi, backend juga menyajikan frontend (mode dev) |
 | `DISK_PATH` | `/data` (atau `/`) | Storage utama untuk KPI & alert disk |
-| `FS_PATHS` | `/data,/system,/storage/emulated,/` | Mount yang ditampilkan (duplikat otomatis disaring) |
+| `FS_PATHS` | `/data,/system,/` | Mount yang ditampilkan (duplikat otomatis disaring) |
 | `SERVICES` | `nginx,sshd,cloudflared` | Service runit yang dipantau (`none` = tidak ada) |
 | `SV_DIR` | `$PREFIX/var/service` | Direktori service runit |
 | `MONITOR_TOKEN` | – | Token Bearer untuk `/api/processes`. Kosong = endpoint nonaktif |

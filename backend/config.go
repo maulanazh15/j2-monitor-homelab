@@ -95,7 +95,7 @@ func loadConfig() Config {
 		DBPath:        envOr("DB_PATH", "/data/data/com.termux/files/home/homelab/database/homelab.db"),
 		StaticDir:     os.Getenv("STATIC_DIR"),
 		DiskPath:      envOr("DISK_PATH", defDisk),
-		FSPaths:       envList("FS_PATHS", "/data,/system,/storage/emulated,/"),
+		FSPaths:       envList("FS_PATHS", "/data,/system,/"),
 		Services:      envList("SERVICES", "nginx,sshd,cloudflared"),
 		ServiceDir:    envOr("SV_DIR", defSvDir),
 		Token:         os.Getenv("MONITOR_TOKEN"),
