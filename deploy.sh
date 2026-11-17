@@ -4,7 +4,8 @@
 #   ./deploy.sh              deploy (minta konfirmasi)
 #   ./deploy.sh -y           deploy tanpa konfirmasi
 #   ./deploy.sh --pull-db    hanya ambil salinan DB produksi ke .dev/prod-copy.db
-#   ./deploy.sh --rollback   kembalikan backup terakhir (lihat rollback di README)
+#   ./deploy.sh --rollback [nama]   kembalikan backup terakhir, atau backup tertentu
+#   ./deploy.sh --list-backups      tampilkan daftar backup di server
 #
 # Binary di-build LANGSUNG di HP (GOOS=android GOARCH=arm), sama seperti v1,
 # sehingga tidak ada masalah arsitektur/linker. Sebelum mengganti apa pun,
@@ -32,12 +33,14 @@ pull_db() {
 }
 
 rollback() {
-  log "Rollback ke backup terakhir di $HOST"
+  local want="${1:-}"
+  [[ -z "$want" || "$want" =~ ^go-monitor-deploy-[0-9-]+$ ]] || die "nama backup tidak valid: $want"
+  log "Rollback di $HOST ke ${want:-backup terakhir}"
   ssh "$HOST" "bash -s" <<EOF
 set -e
 export SVDIR=\$PREFIX/var/service
-B=\$(ls -1d $R_BAK/go-monitor-deploy-* 2>/dev/null | tail -1)
-[ -n "\$B" ] || { echo "Tidak ada backup"; exit 1; }
+if [ -n "$want" ]; then B=$R_BAK/$want; else B=\$(ls -1d $R_BAK/go-monitor-deploy-* 2>/dev/null | tail -1); fi
+[ -d "\$B" ] || { echo "Backup tidak ditemukan: \$B"; exit 1; }
 echo "Backup: \$B"
 cp "\$B/monitor" $R_APP/monitor
 cp "\$B/main.go" $R_APP/main.go 2>/dev/null || true
@@ -52,7 +55,8 @@ EOF
 
 case "${1:-}" in
   --pull-db) pull_db; exit 0 ;;
-  --rollback) rollback; exit 0 ;;
+  --rollback) rollback "${2:-}"; exit 0 ;;
+  --list-backups) ssh "$HOST" "ls -1d $R_BAK/go-monitor-deploy-* | xargs -n1 basename"; exit 0 ;;
 esac
 
 # ---------- 1. cek lokal ----------

@@ -132,8 +132,13 @@ index `timestamp`, dan tabel `monitor_events`. Tidak ada data yang dihapus; bina
 ## Rollback
 
 ```bash
-./deploy.sh --rollback   # pulihkan binary + frontend dari backup terakhir & restart
+./deploy.sh --list-backups                                 # daftar backup di server
+./deploy.sh --rollback                                     # pulihkan backup terakhir & restart
+./deploy.sh --rollback go-monitor-deploy-20261118-063250   # pulihkan backup tertentu
 ```
+
+Setiap deploy membuat backup baru berisi versi yang sedang berjalan **sebelum** deploy tersebut.
+Backup versi v1 (sebelum redesign) adalah `go-monitor-deploy-20261118-063250`.
 
 Manual di server:
 
