@@ -104,8 +104,13 @@
   };
 
   function route() {
-    const v = (location.hash || '#overview').slice(1);
+    const [v, arg] = (location.hash || '#overview').slice(1).split('/');
     const view = VIEWS[v] ? v : 'overview';
+    if (view === 'metrics' && arg && RANGES[arg] && arg !== S.range) {
+      S.range = arg;
+      store.set('range', arg);
+      $$('#range-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.range === arg)));
+    }
     S.view = view;
     $$('[data-view]').forEach((el) => { el.hidden = el.dataset.view !== view; });
     $$('[data-nav]').forEach((a) => {
@@ -142,7 +147,7 @@
     const base = Math.max(5, Number(settings.interval) || 5);
     const delay = S.online ? base : Math.min(60, base * Math.pow(2, Math.min(S.fails - 1, 3)));
     timers.poll = setTimeout(poll, delay * 1000);
-    if (!S.online) $('banner-text').textContent = `Menampilkan data terakhir (${fmtAgo(S.lastOk)}). Mencoba lagi dalam ${delay} dtk.`;
+    if (!S.online) $('banner-text').textContent = (S.lastOk ? `Menampilkan data terakhir (${fmtAgo(S.lastOk)}).` : 'Belum ada data yang diterima.') + ` Mencoba lagi dalam ${delay} dtk.`;
   }
 
   function onLive(points, replace) {
@@ -344,7 +349,7 @@
       { key: 'net_rx', name: 'Download (RX)', color: '--cyan', area: true },
       { key: 'net_tx', name: 'Upload (TX)', color: '--violet', area: true },
     ] },
-    { id: 'disk', title: 'Penggunaan disk', unit: '%', th: 'disk', series: [
+    { id: 'disk', title: 'Penggunaan disk', unit: '%', max: 100, th: 'disk', series: [
       { key: 'disk', name: 'Disk terpakai', color: '--amber', area: true },
     ] },
     { id: 'io', title: 'Disk I/O', unit: 'rate', series: [
@@ -384,9 +389,9 @@
     const th0 = def.th ? th(def.th) : null;
     const markLine = th0 ? {
       silent: true, symbol: 'none', animation: false,
-      label: { color: muted, fontSize: 10, formatter: (p) => p.name },
+      label: { color: muted, fontSize: 10, position: 'insideEndTop', formatter: (p) => p.name },
       data: [
-        { yAxis: th0.warning, name: 'warning', lineStyle: { color: cssVar('--amber'), type: 'dashed', width: 1, opacity: .6 } },
+        { yAxis: th0.warning, name: 'warning', label: { position: 'insideEndBottom' }, lineStyle: { color: cssVar('--amber'), type: 'dashed', width: 1, opacity: .6 } },
         { yAxis: th0.critical, name: 'critical', lineStyle: { color: cssVar('--rose'), type: 'dashed', width: 1, opacity: .6 } },
       ],
     } : undefined;
@@ -548,11 +553,20 @@
         : `Historis · rata-rata per ${fmtDur(data.step)} · ${pts.length} titik`;
       $('play-btn').disabled = data.live || pts.length < 10;
       const st = S.status || {};
+      const gap = Math.max(data.step || 5, 5) * 2.5; // detik; celah lebih besar = data hilang (server mati)
       charts.metrics.forEach((m) => {
         const series = m.def.series.map((s) => {
-          const d = (s.historyOnly && data.live) ? [] : pts.map((p) => [p.time * 1000, isNum(p[s.key]) ? p[s.key] : null]);
+          const d = [];
+          if (!(s.historyOnly && data.live)) {
+            pts.forEach((p, i) => {
+              // sisipkan null agar celah tampil sebagai jeda, bukan garis yang mengarang tren
+              if (i && p.time - pts[i - 1].time > gap) d.push([(pts[i - 1].time + 1) * 1000, null]);
+              d.push([p.time * 1000, isNum(p[s.key]) ? p[s.key] : null]);
+            });
+          }
           m.data[s.key] = d;
-          return { id: s.key, data: d };
+          const n = d.reduce((c, p) => c + (p[1] !== null), 0);
+          return { id: s.key, data: d, showSymbol: n > 0 && n < 3 }; // titik tunggal tetap terlihat
         });
         m.chart.setOption({ xAxis: { min: xMin, max: xMax }, series });
         // empty / unsupported state
@@ -597,6 +611,7 @@
     if (!RANGES[r]) r = '15m';
     S.range = r;
     store.set('range', r);
+    history.replaceState(null, '', '#metrics/' + r);
     $$('#range-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.range === r)));
     stopPlayback();
     resetZoom();
@@ -767,7 +782,7 @@
            <p class="small">Set <code class="mono">MONITOR_TOKEN</code> pada service backend untuk mengaktifkannya dengan autentikasi.</p></div>`
         : `<div class="lock"><p><svg class="i" style="vertical-align:-4px"><use href="#i-lock"/></svg> Daftar proses dilindungi token. Masukkan <code class="mono">MONITOR_TOKEN</code>.</p>
            ${p.badToken ? '<p class="small" style="color:var(--crit)">Token salah.</p>' : ''}
-           <form id="token-form"><label class="sr-only" for="token-input">Token</label>
+           <form id="token-form"><input type="text" name="username" value="j2-monitor" autocomplete="username" hidden><label class="sr-only" for="token-input">Token</label>
            <input type="password" id="token-input" placeholder="Token monitoring" autocomplete="current-password" required>
            <button class="btn primary" type="submit">Buka</button></form>
            <p class="small muted">Token disimpan di browser ini saja (localStorage).</p></div>`;

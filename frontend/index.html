@@ -11,9 +11,9 @@
 // Terapkan tema sebelum render agar tidak berkedip.
 try { var t = localStorage.getItem('j2m.settings'); t = t && JSON.parse(t).theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
-<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/app.css?v=dev">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-<script src="assets/app.js" defer></script>
+<script src="assets/app.js?v=dev" defer></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
